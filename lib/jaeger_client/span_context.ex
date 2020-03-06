@@ -1,45 +1,146 @@
 defmodule JaegerClient.SpanContext do
   @moduledoc """
-  Jaeger SpanContext module
+  Jaeger SpanContext module.
+  Represents propagated span identity and state.
   """
 
+  alias JaegerClient.SamplingState
+  alias JaegerClient.Utils
+
+  @typedoc """
+  Structure represents propagated span identity and state.
+
+  `trace_id`
+    Represents globally unique ID of the trace.
+    Usually generated as a random number.
+
+  `span_id`
+    Represents span ID that must be unique within its trace,
+    but does not have to be globally unique.
+
+  `parent_id`
+    Refers to the ID of the parent span.
+    Should be 0 if the current span is a root span.
+
+  `baggage`
+    Distributed Context baggage. The is a snapshot in time.
+
+  `sampling_state`
+    `JaegerClient.SamplingState.t()` shared across all spans.
+
+  `debug_id`
+    Can be set to some correlation ID when the context is being
+    extracted from a TextMap carrier.
+
+  `remote`
+    Indicates that span context represents a remote parent.
+  """
   @type t :: %__MODULE__{
-          trace_id: trace_id(),
-          span_id: span_id(),
-          parent_id: span_id(),
+          trace_id: JaegerClient.trace_id(),
+          span_id: JaegerClient.span_id(),
+          parent_id: JaegerClient.span_id(),
           baggage: %{optional(binary) => binary},
           sampling_state: nil,
           debug_id: binary,
           remote: boolean
         }
 
-  defstruct trace_id: nil,
-            span_id: nil,
-            parent_id: nil,
+  defstruct trace_id: 0,
+            span_id: 0,
+            parent_id: 0,
             baggage: %{},
             sampling_state: nil,
             debug_id: "",
             remote: false
 
-  def sampled?(%__MODULE__{} = context)
+  @doc """
+  Returns whether this trace was chosen for permanent storage
+  by the sampling mechanism of the tracer.
+  """
+  @spec sampled?(t()) :: boolean
+  def sampled?(%__MODULE__{sampling_state: sampling_state}),
+    do: SamplingState.sampled?(sampling_state)
 
-  def debug?(%__MODULE__{})
+  @doc """
+  Indicates whether sampling was explicitly requested by the service.
+  """
+  @spec debug?(t()) :: boolean
+  def debug?(%__MODULE__{sampling_state: sampling_state}),
+    do: SamplingState.debug?(sampling_state)
 
-  def sampling_finalized?(%__MODULE__{})
+  @doc """
+  Indicates whether the sampling decision has been finalized.
+  """
+  @spec sampling_finalized?(t()) :: boolean
+  def sampling_finalized?(%__MODULE__{sampling_state: sampling_state}),
+    do: SamplingState.final?(sampling_state)
 
-  def firehouse?(%__MODULE__{})
+  @doc """
+  Indicates whether the firehose flag was set.
+  """
+  @spec firehose?(t()) :: boolean
+  def firehose?(%__MODULE__{sampling_state: sampling_state}),
+    do: SamplingState.firehose?(sampling_state)
 
-  def valid?(%__MODULE__{})
+  @doc """
+  Indicates whether this context actually represents a valid trace.
+  """
+  @spec valid?(t()) :: boolean
+  def valid?(%__MODULE__{trace_id: trace_id, span_id: span_id, parent_id: 0}),
+    do: Utils.trace_id_valid?(trace_id) && Utils.span_id_valid?(span_id)
 
-  def to_string(%__MODULE__{})
+  def valid?(%__MODULE__{trace_id: trace_id, span_id: span_id, parent_id: parent_id}),
+    do:
+      Utils.trace_id_valid?(trace_id) && Utils.span_id_valid?(span_id) &&
+        Utils.span_id_valid?(parent_id)
 
-  def copy_from(%__MODULE__{} = to, %__MODULE__{} = from)
+  @doc """
+  Converts goven `JaegerClient.SpanContext.t()` to it's binary representation.
+  """
+  @spec to_string(t()) :: binary
+  def to_string(%__MODULE__{
+        trace_id: trace_id,
+        span_id: span_id,
+        parent_id: parent_id,
+        sampling_state: %SamplingState{state_flags: flags}
+      }) do
+    "#{Utils.trace_id_to_string!(trace_id)}:#{Utils.span_id_to_string!(span_id)}:#{
+      Utils.span_id_to_string!(parent_id)
+    }:#{Utils.int_10_to_string(flags)}"
+  end
 
-  def with_baggage_item(%__MODULE__{}, key, value)
+  @doc """
+  Creates a new context with an extra baggage item.
+  """
+  @spec with_baggage_item(t(), binary, binary) :: t()
+  def with_baggage_item(%__MODULE__{baggage: baggage} = ctx, key, value),
+    do: %__MODULE__{ctx | baggage: Map.put(baggage, key, value)}
+
+  @doc """
+  Merges data from both given contexts into new one, including span identity and baggage.
+  """
+  @spec copy_from(t(), t()) :: t()
+  def copy_from(%__MODULE__{baggage: baggage} = ctx1, %__MODULE__{} = ctx2) do
+    ctx = Map.merge(ctx1, ctx2)
+    %__MODULE__{ctx | baggage: Map.merge(ctx.baggage, baggage)}
+  end
 
   @doc """
   Reconstructs the Context encoded in a string
+  In case of some issues error will be risen
   """
-  @spec from_string(binary) :: {:ok, t()} | {:error, term}
-  def from_string(value)
+  @spec from_string!(binary) :: t()
+  def from_string!(""),
+    do: raise(ArgumentError, message: "wrong input string for extracting span_context")
+
+  def from_string!(value) do
+    [trace_id_low, span_id, parent_span_id, bits] = String.split(value, ":")
+
+    %__MODULE__{
+      trace_id: Utils.to_trace_id!(trace_id_low),
+      span_id: Utils.to_span_id!(span_id),
+      parent_id: Utils.to_span_id!(parent_span_id),
+      sampling_state: %SamplingState{state_flags: Utils.parse_int_10!(bits)}
+    }
+  end
 end
