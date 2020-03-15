@@ -6,15 +6,15 @@ defmodule JaegerClient.SamplingState do
   use Bitwise
 
   # is the bit mask indicating that a span has been sampled.
-  @flagSampled 1
+  @flag_sampled 1
   # is the bit mask indicating that a span has been marked for debug.
-  @flagDebug 2
+  @flag_debug 2
 
   # 0x4 is reserved for deferred sampling in the future
   # @flagReserved 4
 
   # is the bit mask indicating a span is a firehose span.
-  @flagFirehose 8
+  @flag_firehose 8
 
   @typedoc """
   SamplerState structure:
@@ -36,7 +36,7 @@ defmodule JaegerClient.SamplingState do
     - it has inherited the sampling decision from its parent
     - its debug flag is set via the sampling.priority tag
     - it is finish()-ed
-    - setOperationName is called
+    - set_operation_name is called
     - it is used as a parent for another span
     - its context is serialized using injectors
 
@@ -75,21 +75,21 @@ defmodule JaegerClient.SamplingState do
   """
   @spec sampled?(t()) :: boolean
   def sampled?(%__MODULE__{state_flags: state_flags}),
-    do: band(state_flags, @flagSampled) == @flagSampled
+    do: band(state_flags, @flag_sampled) == @flag_sampled
 
   @doc """
   Indicates whether sampling was explicitly requested by the service.
   """
   @spec debug?(t()) :: boolean
   def debug?(%__MODULE__{state_flags: state_flags}),
-    do: band(state_flags, @flagDebug) == @flagDebug
+    do: band(state_flags, @flag_debug) == @flag_debug
 
   @doc """
   Indicates whether the firehose flag was set.
   """
   @spec firehose?(t()) :: boolean
   def firehose?(%__MODULE__{state_flags: state_flags}),
-    do: band(state_flags, @flagFirehose) == @flagFirehose
+    do: band(state_flags, @flag_firehose) == @flag_firehose
 
   @doc """
   Indicates whether the sampling decision has been finalized.
@@ -97,4 +97,42 @@ defmodule JaegerClient.SamplingState do
   @spec final?(t()) :: boolean
   def final?(%__MODULE__{final: final}),
     do: final
+
+  @doc """
+  Sets final property to given value
+  """
+  @spec set_final(t(), boolean) :: t()
+  def set_final(%__MODULE__{} = sampling_state, value) when is_boolean(value),
+    do: %__MODULE__{sampling_state | final: value}
+
+  def set_final(sampling_state, _),
+    do: sampling_state
+
+  @doc """
+  Sets sampled flag for a sampling_state.
+  """
+  @spec set_sampled(t(), boolean) :: t()
+  def set_sampled(%__MODULE__{} = sampling_state, enable \\ true),
+    do: toggle_flag(sampling_state, @flag_sampled, enable)
+
+  @doc """
+  Set debug flag flag for a sampling_state.
+  """
+  @spec set_debug(t(), boolean) :: t()
+  def set_debug(%__MODULE__{} = sampling_state, enable \\ true),
+    do: toggle_flag(sampling_state, @flag_debug, enable)
+
+  @doc """
+  Set firehose flag flag for a sampling_state.
+  """
+  @spec set_firehose(t(), boolean) :: t()
+  def set_firehose(%__MODULE__{} = sampling_state, enable \\ true),
+    do: toggle_flag(sampling_state, @flag_firehose, enable)
+
+  # Toggle sampling_flags
+  defp toggle_flag(%__MODULE__{state_flags: state_flags} = sampling_state, mask, true),
+    do: %__MODULE__{sampling_state | state_flags: bor(state_flags, mask)}
+
+  defp toggle_flag(%__MODULE__{state_flags: state_flags} = sampling_state, mask, false),
+    do: %__MODULE__{sampling_state | state_flags: band(state_flags, bnot(mask))}
 end

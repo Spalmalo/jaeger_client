@@ -53,6 +53,7 @@ defmodule JaegerClient.SpanContext do
             debug_id: "",
             remote: false
 
+
   @doc """
   Returns whether this trace was chosen for permanent storage
   by the sampling mechanism of the tracer.
@@ -69,18 +70,18 @@ defmodule JaegerClient.SpanContext do
     do: SamplingState.debug?(sampling_state)
 
   @doc """
-  Indicates whether the sampling decision has been finalized.
-  """
-  @spec sampling_finalized?(t()) :: boolean
-  def sampling_finalized?(%__MODULE__{sampling_state: sampling_state}),
-    do: SamplingState.final?(sampling_state)
-
-  @doc """
   Indicates whether the firehose flag was set.
   """
   @spec firehose?(t()) :: boolean
   def firehose?(%__MODULE__{sampling_state: sampling_state}),
     do: SamplingState.firehose?(sampling_state)
+
+  @doc """
+  Indicates whether the sampling decision has been finalized.
+  """
+  @spec sampling_finalized?(t()) :: boolean
+  def sampling_finalized?(%__MODULE__{sampling_state: sampling_state}),
+    do: SamplingState.final?(sampling_state)
 
   @doc """
   Indicates whether this context actually represents a valid trace.
@@ -93,6 +94,34 @@ defmodule JaegerClient.SpanContext do
     do:
       Utils.trace_id_valid?(trace_id) && Utils.span_id_valid?(span_id) &&
         Utils.span_id_valid?(parent_id)
+
+  @doc """
+  Finalizes sampling in sampling state
+  """
+  @spec finalize_sampling(t()) :: t()
+  def finalize_sampling(%__MODULE__{sampling_state: sampling_state} = ctx),
+    do: %__MODULE__{ctx | sampling_state: SamplingState.set_final(sampling_state, true)}
+
+  @doc """
+  Set sampling flag for internal sampling_state
+  """
+  @spec set_sampled(t(), boolean) :: t()
+  def set_sampled(%__MODULE__{sampling_state: sampling_state} = ctx, enable \\ true),
+    do: %__MODULE__{ctx | sampling_state: SamplingState.set_sampled(sampling_state, enable)}
+
+  @doc """
+  Set debug flag for internal sampling_state
+  """
+  @spec set_debug(t(), boolean) :: t()
+  def set_debug(%__MODULE__{sampling_state: sampling_state} = ctx, enable \\ true),
+    do: %__MODULE__{ctx | sampling_state: SamplingState.set_debug(sampling_state, enable)}
+
+  @doc """
+  Set firehose flag for internal sampling_state
+  """
+  @spec set_firehose(t(), boolean) :: t()
+  def set_firehose(%__MODULE__{sampling_state: sampling_state} = ctx, enable \\ true),
+    do: %__MODULE__{ctx | sampling_state: SamplingState.set_firehose(sampling_state, enable)}
 
   @doc """
   Converts goven `JaegerClient.SpanContext.t()` to it's binary representation.

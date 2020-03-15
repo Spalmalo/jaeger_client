@@ -1,6 +1,10 @@
 # JaegerClient
 
-**TODO: Add description**
+Base span usage:
+
+1. Get span from HTTP Headers and do somthing under new span
+2. Get span from string representation and do something with a child/followed span
+3. Start new root span and send it as part of something futher
 
 ## Installation
 

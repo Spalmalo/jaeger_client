@@ -13,9 +13,15 @@ defmodule JaegerClient.MixProject do
         output_path: "lib/",
         namespace: "Jaeger.Thrift.Generated"
       ],
+      elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps()
     ]
   end
+
+  # This makes sure your factory and any other modules in test/support are compiled
+  # when in the test environment.
+  defp elixirc_paths(:test), do: ["lib", "web", "test/support"]
+  defp elixirc_paths(_), do: ["lib", "web"]
 
   # Run "mix help compile.app" to learn about applications.
   def application do
@@ -27,7 +33,8 @@ defmodule JaegerClient.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:thrift, github: "pinterest/elixir-thrift"}
+      {:thrift, github: "pinterest/elixir-thrift"},
+      {:faker, "~> 0.13", only: :test}
     ]
   end
 end

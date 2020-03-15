@@ -35,4 +35,52 @@ defmodule JaegerClient.SamplingStateTest do
     assert SamplingState.final?(%SamplingState{final: true})
     refute SamplingState.final?(%SamplingState{final: false})
   end
+
+  test "set_final/2 correctly sets final flag" do
+    state = %SamplingState{}
+    assert state |> SamplingState.set_final(true) |> SamplingState.final?()
+    refute state |> SamplingState.set_final(false) |> SamplingState.final?()
+  end
+
+  test "set_sampled/1 correctly sets flags" do
+    state = %SamplingState{}
+    refute SamplingState.sampled?(state)
+
+    assert state
+           |> SamplingState.set_sampled()
+           |> SamplingState.sampled?()
+
+    refute state
+           |> SamplingState.set_sampled()
+           |> SamplingState.set_sampled(false)
+           |> SamplingState.sampled?()
+  end
+
+  test "set_debug/1 correctly sets flags" do
+    state = %SamplingState{}
+    refute SamplingState.debug?(state)
+
+    assert state
+           |> SamplingState.set_debug()
+           |> SamplingState.debug?()
+
+    refute state
+           |> SamplingState.set_debug()
+           |> SamplingState.set_debug(false)
+           |> SamplingState.debug?()
+  end
+
+  test "set_firehose/1 correctly sets flags" do
+    state = %SamplingState{}
+    refute SamplingState.firehose?(state)
+
+    assert state
+           |> SamplingState.set_firehose()
+           |> SamplingState.firehose?()
+
+    refute state
+           |> SamplingState.set_firehose()
+           |> SamplingState.set_firehose(false)
+           |> SamplingState.firehose?()
+  end
 end

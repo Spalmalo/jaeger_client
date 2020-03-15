@@ -114,4 +114,29 @@ defmodule JaegerClient.Utils do
   @spec span_id_valid?(JaegerClient.span_id()) :: boolean
   def span_id_valid?(id),
     do: id > 0
+
+  @doc """
+  Generates a random 64 bit integer
+  ## Example
+    iex> id = JaegerClient.Utils.random_id()
+    ...> is_integer(id)
+    true
+  """
+  @spec random_id() :: pos_integer
+  def random_id() do
+    <<id::64>> = :crypto.strong_rand_bytes(8)
+    id
+  end
+
+  @doc """
+  Returns the current timestamp as 
+  an integer
+  ## Example
+    iex> timestamp = JaegerClient.Utils.current_time()
+    ...> is_integer(timestamp)
+    true
+  """
+  @spec current_time() :: pos_integer
+  def current_time(),
+    do: :os.system_time(:microsecond)
 end

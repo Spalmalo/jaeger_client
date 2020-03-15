@@ -90,4 +90,47 @@ defmodule JaegerClient.SpanContextTest do
     check_flags.("1:1:1:10", false, true, true)
     check_flags.("1:1:1:11", true, true, true)
   end
+
+  test "finalize_sampling/1 should correctly finalize span context" do
+    ctx = SpanContext.from_string!("1:1:1:0")
+
+    refute SpanContext.sampling_finalized?(ctx)
+    assert ctx |> SpanContext.finalize_sampling() |> SpanContext.sampling_finalized?()
+  end
+
+  test "set_sampled/1 should correctly set sampling flag" do
+    ctx = SpanContext.from_string!("1:1:1:0")
+
+    refute SpanContext.sampled?(ctx)
+    assert ctx |> SpanContext.set_sampled() |> SpanContext.sampled?()
+
+    refute ctx
+           |> SpanContext.set_sampled()
+           |> SpanContext.set_sampled(false)
+           |> SpanContext.sampled?()
+  end
+
+  test "set_debug/1 should correctly set debug flag" do
+    ctx = SpanContext.from_string!("1:1:1:0")
+
+    refute SpanContext.debug?(ctx)
+    assert ctx |> SpanContext.set_debug() |> SpanContext.debug?()
+
+    refute ctx
+           |> SpanContext.set_debug()
+           |> SpanContext.set_debug(false)
+           |> SpanContext.debug?()
+  end
+
+  test "set_firehose/1 should correctly set firehose flag" do
+    ctx = SpanContext.from_string!("1:1:1:0")
+
+    refute SpanContext.firehose?(ctx)
+    assert ctx |> SpanContext.set_firehose() |> SpanContext.firehose?()
+
+    refute ctx
+           |> SpanContext.set_firehose()
+           |> SpanContext.set_firehose(false)
+           |> SpanContext.firehose?()
+  end
 end
