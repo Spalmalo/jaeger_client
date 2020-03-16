@@ -6,6 +6,9 @@ defmodule JaegerClient.Sampler.SamplingDecision do
   alias JaegerClient.Span
   alias JaegerClient.SpanContext
 
+  @typedoc """
+  Sampling decision
+  """
   @type t :: %__MODULE__{
           sample: boolean,
           retryable: boolean,
@@ -28,12 +31,8 @@ defmodule JaegerClient.Sampler.SamplingDecision do
       |> apply_retryable(retryable)
       |> apply_sample(sample)
 
-    tags =
-      span
-      |> Map.get(:tags, %{})
-      |> Map.merge(tags)
-
-    %Span{span | context: context, tags: tags}
+    %Span{span | context: context}
+    |> Span.append_tags(tags)
   end
 
   defp apply_retryable(%SpanContext{} = context, true),

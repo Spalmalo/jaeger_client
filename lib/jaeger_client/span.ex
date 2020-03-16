@@ -102,7 +102,7 @@ defmodule JaegerClient.Span do
         span
     end
     |> do_add_tags(%{key => value})
-    |> finalize_sampling()
+    |> on_tag_added()
   end
 
   @doc """
@@ -120,10 +120,22 @@ defmodule JaegerClient.Span do
         set_sampling_priority(span, value)
     end
     |> do_add_tags(tags)
-    |> finalize_sampling()
+    |> on_tag_added()
   end
 
   def finish(%__MODULE__{}), do: :ok
+
+  # This function is made to be hidden. it's ability for library to add tags directly
+  # without checking if span is `writable?/1`. 
+  # You shouldn't use it !
+  @doc false
+  def append_tags(%__MODULE__{tags: tags} = span, new_tags) do
+    updated =
+      new_tags
+      |> Enum.map(fn {k, v} -> %{key: k, value: v} end)
+
+    %__MODULE__{span | tags: tags ++ updated}
+  end
 
   ######################################################
   # Private functions
@@ -166,22 +178,18 @@ defmodule JaegerClient.Span do
     do: span
 
   # Add new tags without rewriginh old ones
-  defp do_add_tags(%__MODULE__{tags: tags} = span, new_tags) when is_map(new_tags) do
+  defp do_add_tags(%__MODULE__{} = span, new_tags) when is_map(new_tags) do
     case writable?(span) do
       false ->
         span
 
       true ->
-        updated =
-          new_tags
-          |> Enum.map(fn {k, v} -> %{key: k, value: v} end)
-
-        %__MODULE__{span | tags: tags ++ updated}
+        append_tags(span, new_tags)
     end
   end
 
-  # Finalizes sampling_state if it's not yet finalized.
-  defp finalize_sampling(%__MODULE__{context: context} = span) do
+  # Finalizes sampling_state if it's not yet finalized on new tag added to span
+  defp on_tag_added(%__MODULE__{context: context} = span) do
     case SpanContext.sampling_finalized?(context) do
       true ->
         span

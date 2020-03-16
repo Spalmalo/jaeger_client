@@ -3,4 +3,5 @@ defmodule JaegerClient.Tracer do
   Tracer implementation
   """
 
+
 end
