@@ -13,6 +13,9 @@ defmodule JaegerClient.SpanTest do
     assert catch_error(
              %Span{operation_name: ^name} = Span.new(name <> "1", Helper.new_span_context())
            )
+
+    %Span{start_time: time} = Span.new(name, Helper.new_span_context())
+    assert time > 0
   end
 
   test "set_operation_name/2 sets or changes name" do

@@ -9,7 +9,7 @@ defmodule JaegerClient.MixProject do
       start_permanent: Mix.env() == :prod,
       compilers: [:thrift | Mix.compilers()],
       thrift: [
-        files: Path.wildcard("jaeger-idl/thrift/*.thrift"),
+        files: Path.wildcard("jaeger-idl/*.thrift"),
         output_path: "lib/",
         namespace: "Jaeger.Thrift.Generated"
       ],

@@ -5,7 +5,7 @@ defmodule JaegerClient.Span do
 
   alias JaegerClient.SpanContext
   alias JaegerClient.Ext.Tags
-  alias JaegerClient.Sampler.SamplingDecision
+  alias JaegerClient.Utils
 
   # This is hack for ability to pattern match to this tag in function definition.
   @tag_sampling_priority Tags.sampling_priority()
@@ -67,7 +67,11 @@ defmodule JaegerClient.Span do
   """
   @spec new(binary, SpanContext.t()) :: t()
   def new(operation_name, %SpanContext{} = ctx),
-    do: %__MODULE__{operation_name: operation_name, context: ctx}
+    do: %__MODULE__{
+      operation_name: operation_name,
+      context: ctx,
+      start_time: Utils.current_time()
+    }
 
   @doc """
   Sets or changes the operation name.
@@ -126,7 +130,7 @@ defmodule JaegerClient.Span do
   def finish(%__MODULE__{}), do: :ok
 
   # This function is made to be hidden. it's ability for library to add tags directly
-  # without checking if span is `writable?/1`. 
+  # without checking if span is `writable?/1`.
   # You shouldn't use it !
   @doc false
   def append_tags(%__MODULE__{tags: tags} = span, new_tags) do

@@ -53,7 +53,6 @@ defmodule JaegerClient.SpanContext do
             debug_id: "",
             remote: false
 
-
   @doc """
   Returns whether this trace was chosen for permanent storage
   by the sampling mechanism of the tracer.
