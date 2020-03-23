@@ -16,6 +16,19 @@ defmodule JaegerClient.Span do
   @type tag :: %{key: binary, value: term}
 
   @typedoc """
+  Span References
+
+  `type`
+    Span reference type:
+    - 0 type `child_of`
+    - 1 type `follows_from`
+
+  `context`
+    SpanContext that span is related to
+  """
+  @type ref :: %{type: 0 | 1, context: SpanContext.t()}
+
+  @typedoc """
   `tracer`
     TBD
 
@@ -50,7 +63,7 @@ defmodule JaegerClient.Span do
           duration: non_neg_integer,
           tags: [tag()],
           logs: [],
-          references: []
+          references: [ref()]
         }
 
   defstruct tracer: nil,
