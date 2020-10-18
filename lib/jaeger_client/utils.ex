@@ -129,6 +129,20 @@ defmodule JaegerClient.Utils do
   end
 
   @doc """
+  Generate new random `JaegerClient.trace_id()`.
+  If `use_128_bit` will be set to `true` full 128 bit trace id will be generated.
+  Otherwise `{0, random_number}` one will be created.
+  """
+  @spec random_trace_id(boolean) :: JaegerClient.trace_id()
+  def random_trace_id(use_128_bit \\ false)
+
+  def random_trace_id(false),
+    do: {0, random_id()}
+
+  def random_trace_id(true),
+    do: {random_id(), random_id()}
+
+  @doc """
   Returns the current timestamp as 
   an integer
   ## Example
@@ -139,4 +153,26 @@ defmodule JaegerClient.Utils do
   @spec current_time() :: pos_integer
   def current_time(),
     do: :os.system_time(:microsecond)
+
+  @doc """
+  Check if `JaegerClient.Span.ref()` is empty.
+
+  Note:
+   - SpanContext in ref should not be valid.
+   - SpanContext should not be `debug_id_container_only?`.
+   - SpanContext should not contain any `baggage` items.
+  """
+  @spec ref_empty?(Span.ref()) :: boolean
+  def ref_empty?(%{context: %SpanContext{baggage: []} = ctx}) do
+    with false <- SpanContext.valid?(ctx),
+         false <- SpanContext.debug_id_container_only?(ctx) do
+      true
+    else
+      _ ->
+        false
+    end
+  end
+
+  def ref_empty?(_),
+    do: false
 end
