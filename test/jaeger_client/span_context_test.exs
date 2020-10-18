@@ -2,6 +2,7 @@ defmodule JaegerClient.SpanContextTest do
   use ExUnit.Case
 
   alias JaegerClient.SpanContext
+  alias JaegerClient.SamplingState
 
   test "from_string/1 parsing test" do
     assert catch_error(SpanContext.from_string!(""))
@@ -132,5 +133,35 @@ defmodule JaegerClient.SpanContextTest do
            |> SpanContext.set_firehose()
            |> SpanContext.set_firehose(false)
            |> SpanContext.firehose?()
+  end
+
+  test "new_from_parent/1 should correctly create new context from given parent" do
+    ctx =
+      "1:1:1:1"
+      |> SpanContext.from_string!()
+      |> SpanContext.with_baggage_item("Key", "Val")
+
+    refute ctx.remote
+
+    new_ctx = SpanContext.new_from_parent(ctx)
+
+    assert new_ctx.trace_id == ctx.trace_id
+    assert new_ctx.baggage == ctx.baggage
+    assert new_ctx.parent_id == ctx.span_id
+
+    refute new_ctx.span_id == ctx.span_id
+    refute SamplingState.final?(new_ctx.sampling_state)
+
+    # Check with remote parent span
+    new_ctx = SpanContext.new_from_parent(%SpanContext{ctx | remote: true})
+
+    assert new_ctx.trace_id == ctx.trace_id
+    assert new_ctx.baggage == ctx.baggage
+    assert new_ctx.parent_id == ctx.span_id
+
+    refute new_ctx.span_id == ctx.span_id
+
+    assert SamplingState.final?(new_ctx.sampling_state)
+    assert new_ctx.sampling_state.local_root_span == new_ctx.span_id
   end
 end

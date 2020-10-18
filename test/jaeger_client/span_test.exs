@@ -8,13 +8,11 @@ defmodule JaegerClient.SpanTest do
 
   test "new/1 creates correct spans" do
     name = Faker.String.base64()
-    assert %Span{operation_name: ^name} = Span.new(name, Helper.new_span_context())
+    assert %Span{operation_name: ^name} = Span.new(name, SpanContext.new())
 
-    assert catch_error(
-             %Span{operation_name: ^name} = Span.new(name <> "1", Helper.new_span_context())
-           )
+    assert catch_error(%Span{operation_name: ^name} = Span.new(name <> "1", SpanContext.new()))
 
-    %Span{start_time: time} = Span.new(name, Helper.new_span_context())
+    %Span{start_time: time} = Span.new(name, SpanContext.new())
     assert time > 0
   end
 
@@ -23,7 +21,7 @@ defmodule JaegerClient.SpanTest do
 
     span =
       "test"
-      |> Span.new(Helper.new_span_context())
+      |> Span.new(SpanContext.new())
       |> Span.set_operation_name(name)
 
     assert name == span.operation_name

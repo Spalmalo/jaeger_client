@@ -54,6 +54,34 @@ defmodule JaegerClient.SpanContext do
             remote: false
 
   @doc """
+  Creates new `SpanContext` with given sampling state.
+  By default if no `sampling_state` given, new one will be created.
+  """
+  @spec new(SamplingState.t()) :: t()
+  def new(sampling_state \\ %SamplingState{}),
+    do: %__MODULE__{
+      sampling_state: sampling_state
+    }
+
+  @doc """
+  Generate new Span context created from parent `SpanContext.t()`.
+  """
+  @spec new_from_parent(t()) :: t()
+  def new_from_parent(
+        %__MODULE__{trace_id: trace_id, span_id: span_id, baggage: baggage} = parent
+      ) do
+    new_span_id = Utils.random_id()
+
+    %__MODULE__{
+      trace_id: trace_id,
+      span_id: new_span_id,
+      parent_id: span_id,
+      sampling_state: sampling_state_from_parent(new_span_id, parent),
+      baggage: baggage
+    }
+  end
+
+  @doc """
   Returns whether this trace was chosen for permanent storage
   by the sampling mechanism of the tracer.
   """
@@ -170,5 +198,28 @@ defmodule JaegerClient.SpanContext do
       parent_id: Utils.to_span_id!(parent_span_id),
       sampling_state: %SamplingState{state_flags: Utils.parse_int_10!(bits)}
     }
+  end
+
+  @doc false
+  @spec debug_id_container_only?(t()) :: boolean
+  def debug_id_container_only?(%__MODULE__{debug_id: ""}),
+    do: false
+
+  def debug_id_container_only?(%__MODULE__{debug_id: debug_id} = ctx),
+    do: !valid?(ctx)
+
+  # Checks if parent span is `remote`. And if it is does `sampling_state` finalization.
+  defp sampling_state_from_parent(span_id, %__MODULE__{
+         sampling_state: sampling_state,
+         remote: remote
+       }) do
+    case remote do
+      true ->
+        %SamplingState{sampling_state | local_root_span: span_id}
+        |> SamplingState.set_final(true)
+
+      false ->
+        sampling_state
+    end
   end
 end

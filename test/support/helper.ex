@@ -5,17 +5,6 @@ defmodule JaegerClient.Test.Support.Helper do
 
   alias JaegerClient.Span
   alias JaegerClient.SpanContext
-  alias JaegerClient.SamplingState
-
-  @doc """
-  Generate new empty span context
-  """
-  @spec new_span_context() :: SpanContext.t()
-  def new_span_context() do
-    %SpanContext{
-      sampling_state: %SamplingState{}
-    }
-  end
 
   @doc """
   Generate new correct `Span.t()` for tests
@@ -24,10 +13,10 @@ defmodule JaegerClient.Test.Support.Helper do
   def new_span(operation_name \\ "")
 
   def new_span(""),
-    do: Span.new(Faker.String.base64(), new_span_context())
+    do: new_span(Faker.String.base64())
 
   def new_span(operation_name),
-    do: Span.new(operation_name, new_span_context())
+    do: Span.new(operation_name)
 
   @doc """
   Checks if given `Span.t()` has all required tags with exact same values

@@ -77,6 +77,14 @@ defmodule JaegerClient.Span do
 
   @doc """
   Creates new `Span` structure with given operation name.
+  And new `SpanContext` will be created.
+  """
+  @spec new(binary) :: t()
+  def new(operation_name),
+    do: new(operation_name, SpanContext.new())
+
+  @doc """
+  Creates new `Span` structure with given operation name.
   """
   @spec new(binary, SpanContext.t()) :: t()
   def new(operation_name, %SpanContext{} = ctx),
